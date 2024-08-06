@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Michel Stempin <michel.stempin@wanadoo.fr>
+ * Copyright 2015 Hans de Goede <hdegoede@redhat.com>
  *
  * This file is dual-licensed: you can use it either under the terms
  * of the GPL or the X11 license, at your option. Note that this dual
@@ -41,47 +41,77 @@
  */
 
 /dts-v1/;
-#include "sun8i-v3s.dtsi"
-#include "sunxi-common-regulators.dtsi"
+#include "sun8i-a33.dtsi"
+#include "sun8i-q8-common.dtsi"
 
 / {
-	model = "FunKey";
-	compatible = "funkey", "allwinner,sun8i-v3s";
-
+	model = "funboy 40a A33 Tablet";
+	compatible = "allwinner,funboy-a33", "allwinner,sun8i-a33";
 	aliases {
 		serial0 = &uart0;
 	};
+	panel {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		power-supply = <&reg_vcc5v0>;
+		backlight = <&backlight>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 
-	chosen {
-		stdout-path = "serial0:115200n8";
+			panel_input: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&tcon0_out_panel>;
+			};
+		};
+	};
+	st7701s {
+        compatible = "spi_st7701s";
+        cs-gpio = <&pio 6 10 GPIO_ACTIVE_HIGH>; //PG 10
+        clk-gpio = <&pio 6 7 GPIO_ACTIVE_HIGH>;  //PG7
+        data-gpio = <&pio 6 6 GPIO_ACTIVE_HIGH>;  //PG6
+        reset-gpio = <&pio 7 1 GPIO_ACTIVE_HIGH>; /* PH1 */
+        status = "okay";
 	};
 };
 
-&i2c0 {
+&backlight{
+	/delete-property/ enable-gpios;
+	// enable-gpios = <&pio 7 1 GPIO_ACTIVE_HIGH>; /* PH1 */
+};
+
+&simplefb_lcd{
+	status = "okay";
+	vcc-lcd-supply = <&reg_vcc5v0>;
+};
+
+&tcon0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&lcd_rgb666_pins>;
 	status = "okay";
 };
 
-&mmc0 {
-	pinctrl-0 = <&mmc0_pins_a>;
-	pinctrl-names = "default";
-	broken-cd;
-	bus-width = <4>;
-	vmmc-supply = <&reg_vcc3v3>;
-	status = "okay";
+&tcon0_out {
+	tcon0_out_panel: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&panel_input>;
+	};
 };
 
 &uart0 {
-	pinctrl-0 = <&uart0_pins_a>;
 	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins_b>;
 	status = "okay";
 };
 
-&usb_otg {
-	dr_mode = "otg";
-	status = "okay";
+&r_uart {
+	status = "disabled";
 };
 
-&usbphy {
-	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
-	status = "okay";
+&mmc0 {
+	/delete-property/ cd-gpios;
+        pinctrl-names = "default";
+        pinctrl-0 = <&mmc0_pins_a>;
 };
+
